@@ -7,6 +7,10 @@
 a1
 |- Assignment1.ipynb
 |
+|- data/
+|   |- raw/
+|   |- noisy/
+|
 |- report/
 |   |- AI2100_Assignment_1.pdf
 |   |- dataset_description.pdf
@@ -18,6 +22,7 @@ a1
 |   |- optimizers.py
 |   |- adaline.py
 |   |- kernels.py
+|   |- initializations.py
 |
 |- plots/
 |   |- q1/
@@ -33,7 +38,7 @@ a1
 
 Navigate to your preferred directory in your terminal. Note that you may need to use `python3` in the terminal instead of `python` depending on your device. 
 
-### Set up a virtual environment (igonre if on Linux, mandatory on windows)
+### Set up a virtual environment (ignore if on Linux, mandatory on windows)
 
 Create a virtual environment
 
@@ -44,14 +49,14 @@ python -m venv venv
 Activate the virtual environment
 
 ```bash
-python venv\Scripts\Activate
+venv\Scripts\Activate
 ```
 
 ### Install Dependencies
 
 Update `pip`
 ```bash
-python -m pip install upgrade --pip
+python -m pip install --upgrade pip
 ```
 This project uses the following `Python` libraries:
 ```
@@ -83,14 +88,14 @@ Edit the file paths in `4. Dataset Construction / Loading the Dataset / dataset_
 
 Open the notebook (`Assignment1.ipynb`) and run all cells. 
 
-This will train models and generate all plots. (Note that no plot is automatically saved to the device).
+This will train models and generate all plots.
 
 ---
 
 ## Reports
 The following reports are included in the `report/` directory:
 - **`report/AI2100_Assignment_1.pdf`**: Complete report containing explanations, derivations, and analysis of all experiments.
-- **`report/dataset_description.py`**: Description of the synthetic dataset generator and process.
+- **`report/dataset_description.pdf`**: Description of the synthetic dataset generator and process.
 
 ---
 ## Source Code

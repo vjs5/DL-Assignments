@@ -60,7 +60,7 @@ class Nesterov:
             if k not in self.v:
                 self.v[k] = np.zeros_like(params[k])
 
-            v_prev = self.v[k]
+            v_prev = self.v[k].copy()
 
             self.v[k] = self.beta * self.v[k] + self.lr * grads[k]
 

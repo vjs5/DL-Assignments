@@ -65,6 +65,16 @@ def leaky_relu_derivative(x, alpha=0.01):
     dx[x < 0] = alpha
     return dx
 
+# -----------------------------
+# Linear (for regression)
+# -----------------------------
+
+def linear(x):
+    return x
+
+def linear_derivative(x):
+    return np.ones_like(x)
+
 
 # -----------------------------
 # Activation lookup dictionaries
@@ -74,12 +84,14 @@ ACTIVATIONS = {
     "sigmoid": sigmoid,
     "tanh": tanh,
     "relu": relu,
-    "leaky_relu": leaky_relu
+    "leaky_relu": leaky_relu,
+    "linear": linear
 }
 
 DERIVATIVES = {
     "sigmoid": sigmoid_derivative,
     "tanh": tanh_derivative,
     "relu": relu_derivative,
-    "leaky_relu": leaky_relu_derivative
+    "leaky_relu": leaky_relu_derivative,
+    "linear": linear_derivative
 }

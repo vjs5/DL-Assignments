@@ -46,7 +46,7 @@ def cross_entropy(y_true, y_pred):
     Assumes y_true is one-hot encoded.
     """
     eps = 1e-12
-    y_pred = np.clip(y_pred, eps, 1 - eps)
+    y_pred = np.clip(y_pred, eps, 1.0)
 
     return -np.mean(np.sum(y_true * np.log(y_pred), axis=1))
 
