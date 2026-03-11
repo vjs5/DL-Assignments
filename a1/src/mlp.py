@@ -7,6 +7,7 @@ Supports:
 - Multiple optimizers
 - Mini-batch training
 - L1 / L2 regularization
+- Validation loss tracking + early stopping
 """
 
 import numpy as np
@@ -102,9 +103,13 @@ class MLP:
         m = y.shape[0]
         y = y.T
 
-        # output layer delta
         aL = self.a[self.L]
-        delta = self.loss_derivative(y, aL) * DERIVATIVES[self.activations[self.L - 1]](self.z[self.L])
+
+        if self.loss_name == "cross_entropy":
+            delta = self.loss_derivative(y, aL)   # shape: (output_size, m)
+        else:
+            # General case: chain rule through the output activation.
+            delta = self.loss_derivative(y, aL) * DERIVATIVES[self.activations[self.L - 1]](self.z[self.L])
 
         for l in reversed(range(1, self.L + 1)):
 
@@ -120,58 +125,85 @@ class MLP:
             if self.regularization == "l1":
                 dW += self.lambda_reg * np.sign(self.params[f"W{l}"])
 
-            grads[f"W{l}"] = dW / m
-            grads[f"b{l}"] = db / m
+            if self.loss_name == "cross_entropy":
+                grads[f"W{l}"] = dW
+                grads[f"b{l}"] = db
+            else:
+                grads[f"W{l}"] = dW / m
+                grads[f"b{l}"] = db / m
 
             if l > 1:
-
                 W = self.params[f"W{l}"]
                 delta = (W.T @ delta) * DERIVATIVES[self.activations[l - 2]](self.z[l - 1])
 
         return grads
 
     # ---------------------------------------------------
-    # Training
+    # Training  (FIX 3: added X_val / y_val + early stopping)
     # ---------------------------------------------------
 
-    def fit(self, X, y, epochs=100, verbose=True):
+    def fit(self, X_train, y_train, X_val=None, y_val=None,
+            epochs=100, patience=10, verbose=True):
 
-        n_samples = X.shape[0]
+        n_samples = X_train.shape[0]
 
-        history = []
+        train_losses = []
+        val_losses   = []
+
+        best_val_loss   = np.inf
+        best_params     = None
+        epochs_no_improve = 0
 
         for epoch in range(epochs):
 
-            indices = np.random.permutation(n_samples)
-
-            X_shuffled = X[indices]
-            y_shuffled = y[indices]
+            # --- mini-batch loop ---
+            indices   = np.random.permutation(n_samples)
+            X_shuf    = X_train[indices]
+            y_shuf    = y_train[indices]
 
             for start in range(0, n_samples, self.batch_size):
+                end     = start + self.batch_size
+                X_batch = X_shuf[start:end]
+                y_batch = y_shuf[start:end]
 
-                end = start + self.batch_size
-
-                X_batch = X_shuffled[start:end]
-                y_batch = y_shuffled[start:end]
-
-                # forward
-                y_pred = self.forward(X_batch)
-
-                # backward
+                self.forward(X_batch)
                 grads = self.backward(y_batch)
-
-                # update
                 self.optimizer.update(self.params, grads)
 
-            # compute epoch loss
-            y_pred_full = self.forward(X)
+            # --- epoch metrics ---
+            y_pred_train = self.forward(X_train)
+            train_loss   = self.loss(y_train.T, y_pred_train)
+            train_losses.append(train_loss)
 
-            loss_value = self.loss(y.T, y_pred_full)
+            if X_val is not None and y_val is not None:
+                y_pred_val = self.forward(X_val)
+                val_loss   = self.loss(y_val.T, y_pred_val)
+                val_losses.append(val_loss)
 
-            history.append(loss_value)
+                # early stopping
+                if val_loss < best_val_loss:
+                    best_val_loss      = val_loss
+                    best_params        = {k: v.copy() for k, v in self.params.items()}
+                    epochs_no_improve  = 0
+                else:
+                    epochs_no_improve += 1
+                    if epochs_no_improve >= patience:
+                        if verbose:
+                            print(f"Early stopping at epoch {epoch} "
+                                  f"(best val loss: {best_val_loss:.4f})")
+                        # restore best weights
+                        self.params = best_params
+                        break
 
             if verbose and epoch % 10 == 0:
-                print(f"Epoch {epoch} Loss {loss_value:.4f}")
+                msg = f"Epoch {epoch:4d}  train loss: {train_loss:.4f}"
+                if val_losses:
+                    msg += f"  val loss: {val_losses[-1]:.4f}"
+                print(msg)
+
+        history = {"train_loss": train_losses}
+        if val_losses:
+            history["val_loss"] = val_losses
 
         return history
 
@@ -180,7 +212,4 @@ class MLP:
     # ---------------------------------------------------
 
     def predict(self, X):
-
-        y_pred = self.forward(X)
-
-        return y_pred.T
+        return self.forward(X).T
